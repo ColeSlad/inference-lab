@@ -38,7 +38,6 @@ services:
     command:
       - --model
       - ${INFERENCE_LAB_MODEL:-Qwen/Qwen3-0.6B}
-      - --enable-prefix-caching
       - --gpu-memory-utilization
       - "0.90"
     deploy:

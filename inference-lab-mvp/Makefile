@@ -1,4 +1,4 @@
-.PHONY: install dev test lint serve bench docker-mock docker-gpu
+.PHONY: install dev test lint serve bench docker-mock docker-gpu docker-gpu-prefix-cache
 
 install:
 	python -m pip install -e ".[dev]"
@@ -21,6 +21,8 @@ bench:
 		--dataset data/prompts.jsonl \
 		--concurrency 1,4,8 \
 		--requests 24 \
+		--repetitions 3 \
+		--warmup-requests 10 \
 		--max-new-tokens 32 \
 		--output results/latest.jsonl
 
@@ -29,3 +31,9 @@ docker-mock:
 
 docker-gpu:
 	INFERENCE_LAB_BACKEND=openai docker compose --profile gpu up --build
+
+docker-gpu-prefix-cache:
+	INFERENCE_LAB_BACKEND=openai docker compose \
+		-f docker-compose.yml \
+		-f docker-compose.prefix-cache.yml \
+		--profile gpu up --build

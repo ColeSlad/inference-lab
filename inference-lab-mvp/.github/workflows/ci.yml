@@ -16,3 +16,5 @@ jobs:
       - run: pip install -e ".[dev]"
       - run: ruff check .
       - run: pytest
+      - run: docker compose --profile gpu config --quiet
+      - run: docker compose -f docker-compose.yml -f docker-compose.prefix-cache.yml --profile gpu config --quiet
