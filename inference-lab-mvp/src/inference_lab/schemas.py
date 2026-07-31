@@ -13,8 +13,8 @@ class GenerateRequest(BaseModel):
 
 class BackendResult(BaseModel):
     text: str
-    prompt_tokens: int
-    output_tokens: int
+    prompt_tokens: int | None = None
+    output_tokens: int | None = None
 
 
 class BackendChunk(BaseModel):
@@ -29,8 +29,8 @@ class GenerateResponse(BaseModel):
     backend: str
     model: str
     text: str
-    prompt_tokens: int
-    output_tokens: int
+    prompt_tokens: int | None = None
+    output_tokens: int | None = None
     total_latency_ms: float
 
 

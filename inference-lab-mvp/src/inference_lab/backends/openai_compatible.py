@@ -43,12 +43,17 @@ class OpenAICompatibleBackend(InferenceBackend):
         usage = body.get("usage") or {}
         return BackendResult(
             text=body["choices"][0].get("text", ""),
-            prompt_tokens=int(usage.get("prompt_tokens", 0)),
-            output_tokens=int(usage.get("completion_tokens", 0)),
+            prompt_tokens=(
+                int(usage["prompt_tokens"]) if usage.get("prompt_tokens") is not None else None
+            ),
+            output_tokens=(
+                int(usage["completion_tokens"])
+                if usage.get("completion_tokens") is not None
+                else None
+            ),
         )
 
     async def stream(self, request: GenerateRequest) -> AsyncIterator[BackendChunk]:
-        output_text = ""
         prompt_tokens: int | None = None
         output_tokens: int | None = None
 
@@ -73,13 +78,7 @@ class OpenAICompatibleBackend(InferenceBackend):
                 if choices:
                     piece = choices[0].get("text", "")
                     if piece:
-                        output_text += piece
                         yield BackendChunk(text=piece)
-
-        if output_tokens is None:
-            output_tokens = max(1, len(output_text.split())) if output_text else 0
-        if prompt_tokens is None:
-            prompt_tokens = max(1, len(request.prompt.split()))
 
         yield BackendChunk(
             prompt_tokens=prompt_tokens,

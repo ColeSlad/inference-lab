@@ -66,7 +66,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             latency_s = time.perf_counter() - started
             REQUESTS.labels(**labels, status="ok").inc()
             REQUEST_LATENCY.labels(**labels).observe(latency_s)
-            GENERATED_TOKENS.labels(backend=backend.name).inc(result.output_tokens)
+            if result.output_tokens is not None:
+                GENERATED_TOKENS.labels(backend=backend.name).inc(result.output_tokens)
             return GenerateResponse(
                 request_id=request_id,
                 backend=backend.name,
@@ -90,8 +91,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         async def events() -> AsyncIterator[str]:
             started = time.perf_counter()
             first_text_at: float | None = None
-            prompt_tokens = 0
-            output_tokens = 0
+            prompt_tokens: int | None = None
+            output_tokens: int | None = None
+            backend_finished = False
             labels = {"backend": backend.name, "mode": "stream"}
             IN_FLIGHT.labels(**labels).inc()
 
@@ -109,8 +111,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                             )
                         )
                     if chunk.finished:
-                        prompt_tokens = chunk.prompt_tokens or 0
-                        output_tokens = chunk.output_tokens or 0
+                        backend_finished = True
+                        prompt_tokens = chunk.prompt_tokens
+                        output_tokens = chunk.output_tokens
+
+                if not backend_finished:
+                    raise RuntimeError("Backend stream ended without a final chunk")
 
                 finished = time.perf_counter()
                 latency_s = finished - started
@@ -119,7 +125,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 )
                 REQUESTS.labels(**labels, status="ok").inc()
                 REQUEST_LATENCY.labels(**labels).observe(latency_s)
-                GENERATED_TOKENS.labels(backend=backend.name).inc(output_tokens)
+                if output_tokens is not None:
+                    GENERATED_TOKENS.labels(backend=backend.name).inc(output_tokens)
                 yield _sse(
                     StreamEvent(
                         type="done",
