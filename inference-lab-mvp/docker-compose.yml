@@ -1,0 +1,53 @@
+services:
+  gateway:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      INFERENCE_LAB_BACKEND: ${INFERENCE_LAB_BACKEND:-mock}
+      INFERENCE_LAB_MODEL: ${INFERENCE_LAB_MODEL:-Qwen/Qwen3-0.6B}
+      INFERENCE_LAB_UPSTREAM_URL: http://vllm:8000
+      INFERENCE_LAB_UPSTREAM_API_KEY: not-needed
+      INFERENCE_LAB_REQUEST_TIMEOUT_S: 180
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+
+  vllm:
+    profiles: ["gpu"]
+    image: ${VLLM_IMAGE:-vllm/vllm-openai:latest}
+    ports:
+      - "8001:8000"
+    ipc: host
+    environment:
+      HF_TOKEN: ${HF_TOKEN:-}
+    volumes:
+      - ${HOME}/.cache/huggingface:/root/.cache/huggingface
+      - vllm-cache:/root/.cache/vllm
+    command:
+      - --model
+      - ${INFERENCE_LAB_MODEL:-Qwen/Qwen3-0.6B}
+      - --enable-prefix-caching
+      - --gpu-memory-utilization
+      - "0.90"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+volumes:
+  vllm-cache:
