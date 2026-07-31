@@ -35,6 +35,7 @@ class TransformersBackend(InferenceBackend):
 
         self._model = AutoModelForCausalLM.from_pretrained(model, **model_kwargs)
         self._model.eval()
+        self._generation_lock = asyncio.Lock()
 
     async def generate(self, request: GenerateRequest) -> BackendResult:
         text_parts: list[str] = []
@@ -53,6 +54,13 @@ class TransformersBackend(InferenceBackend):
         )
 
     async def stream(self, request: GenerateRequest) -> AsyncIterator[BackendChunk]:
+        async with self._generation_lock:
+            async for chunk in self._stream_serialized(request):
+                yield chunk
+
+    async def _stream_serialized(
+        self, request: GenerateRequest
+    ) -> AsyncIterator[BackendChunk]:
         from transformers import AsyncTextIteratorStreamer
 
         inputs = self._tokenizer(request.prompt, return_tensors="pt")
