@@ -84,14 +84,20 @@ python -m inference_lab.benchmark.runner \
   --dataset data/prompts.jsonl \
   --concurrency 1,4,8 \
   --requests 24 \
+  --repetitions 1 \
+  --warmup-requests 2 \
   --max-new-tokens 32 \
   --output results/mock.jsonl
 ```
 
+This is a smoke test, not a publishable performance run. The reduced repetition and warm-up
+counts keep local validation quick.
+
 Outputs:
 
-- `results/mock.jsonl`: one row per request
-- `results/mock.summary.json`: aggregate metrics per concurrency level
+- `results/mock.jsonl`: one row per measured request; warm-ups are excluded
+- `results/mock.summary.json`: experiment manifest, per-repetition summaries, and median metrics
+  per concurrency level
 
 API documentation is available at `http://localhost:8000/docs`; Prometheus metrics are at `http://localhost:8000/metrics/`.
 
@@ -113,7 +119,9 @@ INFERENCE_LAB_TRANSFORMERS_DEVICE=auto
 INFERENCE_LAB_TRANSFORMERS_DTYPE=auto
 ```
 
-Then start the gateway and run the same benchmark command. The baseline is deliberately simple so that optimized serving behavior has a clear comparison point.
+Then start the gateway and run the same benchmark command. The baseline deliberately serializes
+generation, so concurrent requests queue and that queueing time appears in client/server TTFT. This
+keeps seeded sampling deterministic and gives optimized serving behavior a clear comparison point.
 
 ## Run vLLM on an NVIDIA GPU
 
@@ -130,6 +138,17 @@ INFERENCE_LAB_BACKEND=openai docker compose --profile gpu up --build
 ```
 
 The gateway is exposed on port `8000`, vLLM on port `8001`, and Prometheus on port `9090`.
+This base Compose file leaves prefix caching disabled so it can serve as the vLLM default
+configuration in the first experiment.
+
+For the separate repeated-prefix condition, use the explicit override:
+
+```bash
+INFERENCE_LAB_BACKEND=openai docker compose \
+  -f docker-compose.yml \
+  -f docker-compose.prefix-cache.yml \
+  --profile gpu up --build
+```
 
 Run the benchmark:
 
@@ -139,11 +158,64 @@ python -m inference_lab.benchmark.runner \
   --dataset data/prompts.jsonl \
   --concurrency 1,2,4,8,16,32 \
   --requests 120 \
+  --repetitions 3 \
+  --warmup-requests 10 \
   --max-new-tokens 64 \
+  --metadata experiment-metadata.json \
   --output results/vllm.jsonl
 ```
 
 For published results, replace floating `latest` image tags with an exact image tag or digest and record the GPU, driver, model revision, and command.
+
+## Reproducible artifacts
+
+The runner checks `/health` before load starts and records the resolved backend and model. Every
+summary also includes:
+
+- a unique experiment ID and UTC start/finish times
+- the canonical benchmark command, original process arguments, and all resolved settings
+- Git commit and dirty state
+- dataset path, SHA-256 digest, and prompt count
+- client platform, Python version, and relevant package versions
+- optional user-supplied server metadata
+
+Use `--metadata` for facts the benchmark client cannot discover from the gateway. Keep secrets out
+of this file. A publishable metadata file should look like this, with every placeholder replaced by
+an observed value:
+
+```json
+{
+  "hardware": {
+    "gpu_model": "<exact GPU model>",
+    "gpu_count": 1,
+    "cpu_model": "<exact CPU model>",
+    "ram_gib": "<observed RAM>"
+  },
+  "software": {
+    "gpu_driver": "<driver version>",
+    "cuda": "<CUDA version>",
+    "container_image": "vllm/vllm-openai@sha256:<digest>",
+    "model_revision": "<Hugging Face commit SHA>"
+  },
+  "runtime": {
+    "flags": ["--gpu-memory-utilization", "0.90"]
+  },
+  "environment": {
+    "INFERENCE_LAB_BACKEND": "openai",
+    "INFERENCE_LAB_MODEL": "<model ID>"
+  }
+}
+```
+
+Defaults follow the experiment plan: 10 warm-up requests before each concurrency/repetition pair,
+three measured repetitions, and median aggregate metrics. Warm-ups never appear in raw results.
+`runs` in the summary contains the medians used by the plotting script; `trials` retains every
+per-repetition summary. Raw rows contain stable prompt indices and hashes so prompt order can be
+audited against the dataset digest.
+
+If an upstream backend omits exact token usage, token counts and output-token throughput remain
+`null`; the lab does not estimate them from whitespace. An HTTP 200 stream is counted as successful
+only after a terminal `done` event.
 
 ## Plot a summary
 
@@ -190,6 +262,10 @@ curl -N http://localhost:8000/v1/generate/stream \
 - retain raw request results
 - report failures and outliers
 - record hardware, image digest, Git commit, and runtime flags
+
+The runner records client-visible facts automatically. Hardware, driver, exact model revision,
+container digest, and runtime-only flags must be supplied through `--metadata` and verified by the
+experimenter.
 
 See [`docs/EXPERIMENT_PLAN.md`](docs/EXPERIMENT_PLAN.md) for the first publishable study.
 

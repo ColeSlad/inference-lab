@@ -80,6 +80,39 @@ Secondary:
 7. Inspect outliers rather than deleting them silently.
 8. Repeat any surprising result before drawing conclusions.
 
+### Runner mapping
+
+The benchmark CLI supports steps 2–6 as follows:
+
+- it requires a successful gateway `/health` response before creating load
+- `--warmup-requests` runs before every concurrency/repetition pair and is excluded from raw output
+- `--repetitions` retains each trial and computes median metrics across trials
+- raw rows include prompt indices and SHA-256 hashes; the manifest includes the full dataset hash
+- `--metadata` records observed hardware, driver, image digest, model revision, and runtime flags
+
+A publishable invocation should state all non-default controls explicitly:
+
+```bash
+python -m inference_lab.benchmark.runner \
+  --url http://localhost:8000 \
+  --dataset data/<workload>.jsonl \
+  --concurrency 1,2,4,8,16,32 \
+  --requests 120 \
+  --repetitions 3 \
+  --warmup-requests 10 \
+  --max-new-tokens 64 \
+  --temperature 0 \
+  --top-p 1 \
+  --seed 42 \
+  --metadata experiment-metadata.json \
+  --output results/<backend>-<workload>.jsonl
+```
+
+The generated summary records the canonical command, resolved settings, Git state, dataset digest,
+client environment, backend/model identity, per-trial summaries, and aggregate medians. Do not treat
+a run as publishable when the Git state is dirty, required server metadata is missing, an image uses
+a floating tag, or exact token usage is unavailable for a token-throughput claim.
+
 ## MVP completion criteria
 
 The MVP is complete when it can:
@@ -90,6 +123,10 @@ The MVP is complete when it can:
 - save raw and summarized results
 - expose Prometheus metrics
 - reproduce one documented comparison with commands and hardware details
+
+The mock backend currently validates the service/benchmark path without claiming performance.
+Real-model serving and the first pinned-hardware comparison remain unverified in this environment;
+both must be demonstrated before the MVP can be called complete.
 
 ## Post-MVP milestones
 
