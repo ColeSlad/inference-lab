@@ -226,13 +226,14 @@ def build_manifest(
         "experiment_id": experiment_id,
         "started_at_utc": started_at.isoformat(),
         "command": args.command,
+        "process_argv": args.process_argv,
         "git": git_metadata(Path.cwd()),
         "dataset": {
             "path": str(args.dataset),
             "sha256": sha256_file(args.dataset),
             "prompt_count": len(prompts),
         },
-        "runtime": runtime,
+        "runtime": {"gateway_url": args.url.rstrip("/"), **runtime},
         "request": {
             "max_new_tokens": args.max_new_tokens,
             "temperature": args.temperature,
@@ -369,6 +370,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output", type=Path, default=Path("results/latest.jsonl"))
     args = parser.parse_args()
     args.command = shlex.join(["inference-lab-bench", *sys.argv[1:]])
+    args.process_argv = list(sys.orig_argv)
     args.concurrency = [int(value) for value in args.concurrency.split(",") if value.strip()]
     if not args.concurrency or any(value < 1 for value in args.concurrency):
         parser.error("--concurrency must contain positive integers")

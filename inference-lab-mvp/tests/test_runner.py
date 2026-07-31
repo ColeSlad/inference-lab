@@ -97,6 +97,7 @@ async def test_async_main_writes_reproducible_artifacts(
         metadata=metadata,
         output=output,
         command="inference-lab-bench --test",
+        process_argv=["python", "-m", "inference_lab.benchmark.runner", "--test"],
     )
 
     await runner.async_main(args)
@@ -109,6 +110,11 @@ async def test_async_main_writes_reproducible_artifacts(
     assert raw_rows[0]["prompt_sha256"] == hashlib.sha256(b"first").hexdigest()
     assert summary["manifest"]["dataset"]["sha256"] == runner.sha256_file(dataset)
     assert summary["manifest"]["git"] == {"commit": "abc123", "dirty": False}
+    assert summary["manifest"]["process_argv"][1:3] == [
+        "-m",
+        "inference_lab.benchmark.runner",
+    ]
+    assert summary["manifest"]["runtime"]["gateway_url"] == "http://test"
     assert summary["manifest"]["user_metadata"]["hardware"]["gpu"] == "test-gpu"
     assert len(summary["trials"]) == 4
     assert len(summary["runs"]) == 2
