@@ -1,0 +1,35 @@
+{
+  "dataset": {
+    "path": "data/short_chat.jsonl",
+    "prompt_count": 10,
+    "sha256": "520495730dea75d35688682f0fe31ded568b5789a3397187df3bf333caa5f0e0"
+  },
+  "expected_prompt_tokens": {
+    "maximum": 256,
+    "minimum": 128
+  },
+  "observed_prompt_tokens": {
+    "maximum": 158,
+    "mean": 145.3,
+    "minimum": 132,
+    "per_prompt": [
+      158,
+      143,
+      152,
+      155,
+      146,
+      150,
+      141,
+      132,
+      139,
+      137
+    ]
+  },
+  "tokenizer": {
+    "add_special_tokens": true,
+    "model": "Qwen/Qwen3-8B",
+    "revision": "b968826d9c46dd6066d109eabc6255188de91218"
+  },
+  "valid": true,
+  "violations": []
+}

@@ -122,7 +122,8 @@ The MVP intentionally omits authentication, admission control, durable queues, m
    close both criteria and cannot be replaced by mock timings.
 2. Add safe automated server telemetry capture for GPU memory/utilization and runtime-specific cache
    metrics. The current manifest accepts these as experimenter-supplied metadata.
-3. Add separate short-chat, long-prefill, decode-heavy, repeated-prefix, and no-reuse datasets before
-   drawing workload-level conclusions.
+3. Complete the remaining long-prefill, decode-heavy, repeated-prefix, and no-reuse datasets before
+   drawing conclusions across workload types. The pinned Qwen3-8B short-chat dataset and tokenizer
+   report now cover the first workload.
 4. Pin runtime images and produce a dependency lock for published experiments.
 5. Add a small correctness suite so performance comparisons also enforce output quality.

@@ -47,6 +47,11 @@ Create separate datasets rather than mixing everything into one number:
 3. **Decode-heavy:** 128 input tokens, 256 output tokens.
 4. **Repeated prefix:** shared system/context prefix with varying questions.
 
+Token ranges must be checked with the exact pinned tokenizer rather than approximated from words
+or characters. `inference-lab-inspect-dataset` produces an auditable report and fails when a prompt
+falls outside the workload bounds. A dataset is not ready for measured use until that validation
+passes for the selected model revision.
+
 ### Load levels
 
 Run concurrency levels `1, 2, 4, 8, 16, 32`. Use at least 100 measured requests per level after warm-up for publishable results.

@@ -148,6 +148,27 @@ values to vLLM, while the Transformers adapter passes the revision to the tokeni
 The gateway health response and benchmark manifest report the configured values. The defaults
 `main` and `auto` are convenient for smoke testing but are not publishable controls.
 
+## Validate a workload against the pinned tokenizer
+
+Workload names describe token ranges, not character or whitespace counts. Validate each dataset
+with the exact tokenizer revision used by both serving backends before collecting measurements:
+
+```bash
+inference-lab-inspect-dataset \
+  --dataset data/short_chat.jsonl \
+  --model Qwen/Qwen3-8B \
+  --revision b968826d9c46dd6066d109eabc6255188de91218 \
+  --min-tokens 128 \
+  --max-tokens 256 \
+  --output results/short-chat-token-report.json
+```
+
+The command records the dataset digest, tokenizer identity, every prompt token count, summary
+statistics, and any out-of-range prompt indices. It exits nonzero when a prompt violates the
+declared bounds. The committed `short_chat.qwen3-8b.tokens.json` report records the validated
+132–158 token range for the pinned Qwen3-8B revision. A test ties that report to the dataset digest
+so prompt edits cannot silently leave stale token-length evidence behind.
+
 For the separate repeated-prefix condition, use the explicit override:
 
 ```bash

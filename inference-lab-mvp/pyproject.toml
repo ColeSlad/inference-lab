@@ -36,6 +36,7 @@ plots = [
 
 [project.scripts]
 inference-lab-bench = "inference_lab.benchmark.runner:main"
+inference-lab-inspect-dataset = "inference_lab.benchmark.dataset_tokens:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
