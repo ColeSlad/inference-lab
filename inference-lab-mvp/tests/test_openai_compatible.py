@@ -39,3 +39,34 @@ async def test_missing_upstream_usage_remains_unknown() -> None:
     assert chunks[-1].finished is True
     assert chunks[-1].prompt_tokens is None
     assert chunks[-1].output_tokens is None
+
+
+@pytest.mark.asyncio
+async def test_health_reports_configured_model_controls() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"data": [{"id": "test-model"}]})
+
+    backend = OpenAICompatibleBackend(
+        model="test-model",
+        model_revision="abc123",
+        model_dtype="bfloat16",
+        base_url="http://test",
+        api_key="test",
+        timeout_s=1,
+    )
+    await backend._client.aclose()
+    backend._client = httpx.AsyncClient(
+        base_url="http://test",
+        transport=httpx.MockTransport(handler),
+    )
+
+    health = await backend.health()
+    await backend.close()
+
+    assert health == {
+        "ok": True,
+        "backend": "openai-compatible",
+        "model": "test-model",
+        "model_revision": "abc123",
+        "model_dtype": "bfloat16",
+    }

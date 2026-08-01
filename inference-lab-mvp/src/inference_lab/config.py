@@ -10,6 +10,8 @@ class Settings(BaseSettings):
 
     backend: Literal["mock", "openai", "transformers"] = "mock"
     model: str = "Qwen/Qwen3-0.6B"
+    model_revision: str = "main"
+    model_dtype: str = "auto"
 
     upstream_url: str = "http://localhost:8001"
     upstream_api_key: str = "not-needed"
@@ -19,7 +21,6 @@ class Settings(BaseSettings):
     mock_token_ms: float = Field(default=8.0, ge=0)
 
     transformers_device: str = "auto"
-    transformers_dtype: str = "auto"
 
     model_config = SettingsConfigDict(
         env_prefix="INFERENCE_LAB_",

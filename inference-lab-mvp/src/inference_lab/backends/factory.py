@@ -14,6 +14,8 @@ def build_backend(settings: Settings) -> InferenceBackend:
     if settings.backend == "openai":
         return OpenAICompatibleBackend(
             model=settings.model,
+            model_revision=settings.model_revision,
+            model_dtype=settings.model_dtype,
             base_url=settings.upstream_url,
             api_key=settings.upstream_api_key,
             timeout_s=settings.request_timeout_s,
@@ -23,7 +25,8 @@ def build_backend(settings: Settings) -> InferenceBackend:
 
         return TransformersBackend(
             model=settings.model,
+            revision=settings.model_revision,
             device=settings.transformers_device,
-            dtype=settings.transformers_dtype,
+            dtype=settings.model_dtype,
         )
     raise ValueError(f"Unknown backend: {settings.backend}")

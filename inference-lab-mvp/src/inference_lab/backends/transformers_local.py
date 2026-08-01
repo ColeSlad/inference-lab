@@ -11,7 +11,13 @@ class TransformersBackend(InferenceBackend):
 
     name = "transformers"
 
-    def __init__(self, model: str, device: str = "auto", dtype: str = "auto") -> None:
+    def __init__(
+        self,
+        model: str,
+        revision: str = "main",
+        device: str = "auto",
+        dtype: str = "auto",
+    ) -> None:
         try:
             import torch
             from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -21,8 +27,10 @@ class TransformersBackend(InferenceBackend):
             ) from exc
 
         self.model = model
+        self.model_revision = revision
+        self.model_dtype = dtype
         self._torch = torch
-        self._tokenizer = AutoTokenizer.from_pretrained(model)
+        self._tokenizer = AutoTokenizer.from_pretrained(model, revision=revision)
 
         model_kwargs: dict[str, object] = {"device_map": device}
         if dtype != "auto":
@@ -33,7 +41,11 @@ class TransformersBackend(InferenceBackend):
         else:
             model_kwargs["torch_dtype"] = "auto"
 
-        self._model = AutoModelForCausalLM.from_pretrained(model, **model_kwargs)
+        self._model = AutoModelForCausalLM.from_pretrained(
+            model,
+            revision=revision,
+            **model_kwargs,
+        )
         self._model.eval()
         self._generation_lock = asyncio.Lock()
 

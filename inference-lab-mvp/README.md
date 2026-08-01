@@ -115,8 +115,9 @@ Set:
 ```dotenv
 INFERENCE_LAB_BACKEND=transformers
 INFERENCE_LAB_MODEL=Qwen/Qwen3-0.6B
+INFERENCE_LAB_MODEL_REVISION=<full-hugging-face-commit-sha>
+INFERENCE_LAB_MODEL_DTYPE=bfloat16
 INFERENCE_LAB_TRANSFORMERS_DEVICE=auto
-INFERENCE_LAB_TRANSFORMERS_DTYPE=auto
 ```
 
 Then start the gateway and run the same benchmark command. The baseline deliberately serializes
@@ -140,6 +141,12 @@ INFERENCE_LAB_BACKEND=openai docker compose --profile gpu up --build
 The gateway is exposed on port `8000`, vLLM on port `8001`, and Prometheus on port `9090`.
 This base Compose file leaves prefix caching disabled so it can serve as the vLLM default
 configuration in the first experiment.
+
+For a measured comparison, set `INFERENCE_LAB_MODEL_REVISION` to a full Hugging Face commit SHA
+and `INFERENCE_LAB_MODEL_DTYPE` to the same explicit dtype for both backends. Compose passes both
+values to vLLM, while the Transformers adapter passes the revision to the tokenizer and model.
+The gateway health response and benchmark manifest report the configured values. The defaults
+`main` and `auto` are convenient for smoke testing but are not publishable controls.
 
 For the separate repeated-prefix condition, use the explicit override:
 

@@ -99,7 +99,7 @@ async def fetch_runtime_info(url: str, timeout_s: float) -> dict[str, object]:
     body = response.json()
     if not isinstance(body, dict) or body.get("ok") is not True:
         raise RuntimeError(f"Backend health check did not report ok: {body!r}")
-    return {"backend": body.get("backend"), "model": body.get("model")}
+    return {key: value for key, value in body.items() if key != "ok"}
 
 
 async def run_one(

@@ -12,8 +12,18 @@ class OpenAICompatibleBackend(InferenceBackend):
 
     name = "openai-compatible"
 
-    def __init__(self, model: str, base_url: str, api_key: str, timeout_s: float) -> None:
+    def __init__(
+        self,
+        model: str,
+        base_url: str,
+        api_key: str,
+        timeout_s: float,
+        model_revision: str | None = None,
+        model_dtype: str | None = None,
+    ) -> None:
         self.model = model
+        self.model_revision = model_revision
+        self.model_dtype = model_dtype
         self._client = httpx.AsyncClient(
             base_url=base_url.rstrip("/"),
             timeout=httpx.Timeout(timeout_s),
@@ -90,14 +100,19 @@ class OpenAICompatibleBackend(InferenceBackend):
         try:
             response = await self._client.get("/v1/models")
             response.raise_for_status()
-            return {"ok": True, "backend": self.name, "model": self.model}
+            return await super().health()
         except Exception as exc:  # health endpoint should report rather than raise
-            return {
+            result: dict[str, object] = {
                 "ok": False,
                 "backend": self.name,
                 "model": self.model,
                 "error": str(exc),
             }
+            if self.model_revision is not None:
+                result["model_revision"] = self.model_revision
+            if self.model_dtype is not None:
+                result["model_dtype"] = self.model_dtype
+            return result
 
     async def close(self) -> None:
         await self._client.aclose()

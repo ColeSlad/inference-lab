@@ -81,8 +81,9 @@ top-level `runs` view reports the median of each metric across repetitions.
 The summary manifest records the dataset digest, generation/load settings, canonical command,
 original process arguments, resolved gateway URL, Git revision and dirty state, client package
 versions, UTC timestamps, and backend identity from the health endpoint. Server-side facts that the
-gateway cannot safely infer—GPU, driver, image digest, model revision, and runtime flags—are accepted
-as explicit JSON metadata.
+gateway cannot safely infer—GPU, driver, image digest, and runtime flags—are accepted as explicit
+JSON metadata. Model revision and dtype are configured through the shared settings, enforced by the
+included Transformers and vLLM launch paths, exposed by health, and captured automatically.
 
 ### Observability
 

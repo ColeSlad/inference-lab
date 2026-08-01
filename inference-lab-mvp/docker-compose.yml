@@ -6,6 +6,8 @@ services:
     environment:
       INFERENCE_LAB_BACKEND: ${INFERENCE_LAB_BACKEND:-mock}
       INFERENCE_LAB_MODEL: ${INFERENCE_LAB_MODEL:-Qwen/Qwen3-0.6B}
+      INFERENCE_LAB_MODEL_REVISION: ${INFERENCE_LAB_MODEL_REVISION:-main}
+      INFERENCE_LAB_MODEL_DTYPE: ${INFERENCE_LAB_MODEL_DTYPE:-auto}
       INFERENCE_LAB_UPSTREAM_URL: http://vllm:8000
       INFERENCE_LAB_UPSTREAM_API_KEY: not-needed
       INFERENCE_LAB_REQUEST_TIMEOUT_S: 180
@@ -38,6 +40,10 @@ services:
     command:
       - --model
       - ${INFERENCE_LAB_MODEL:-Qwen/Qwen3-0.6B}
+      - --revision
+      - ${INFERENCE_LAB_MODEL_REVISION:-main}
+      - --dtype
+      - ${INFERENCE_LAB_MODEL_DTYPE:-auto}
       - --gpu-memory-utilization
       - "0.90"
     deploy:

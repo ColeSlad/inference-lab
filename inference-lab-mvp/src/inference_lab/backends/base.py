@@ -7,6 +7,8 @@ from inference_lab.schemas import BackendChunk, BackendResult, GenerateRequest
 class InferenceBackend(ABC):
     name: str
     model: str
+    model_revision: str | None = None
+    model_dtype: str | None = None
 
     @abstractmethod
     async def generate(self, request: GenerateRequest) -> BackendResult:
@@ -17,7 +19,16 @@ class InferenceBackend(ABC):
         raise NotImplementedError
 
     async def health(self) -> dict[str, object]:
-        return {"ok": True, "backend": self.name, "model": self.model}
+        result: dict[str, object] = {
+            "ok": True,
+            "backend": self.name,
+            "model": self.model,
+        }
+        if self.model_revision is not None:
+            result["model_revision"] = self.model_revision
+        if self.model_dtype is not None:
+            result["model_dtype"] = self.model_dtype
+        return result
 
     async def close(self) -> None:
         return None

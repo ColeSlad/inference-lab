@@ -59,7 +59,12 @@ async def test_async_main_writes_reproducible_artifacts(
     calls: list[tuple[int, int]] = []
 
     async def fake_runtime_info(url: str, timeout_s: float) -> dict[str, object]:
-        return {"backend": "mock", "model": "mock-test"}
+        return {
+            "backend": "mock",
+            "model": "mock-test",
+            "model_revision": "abc123",
+            "model_dtype": "bfloat16",
+        }
 
     async def fake_concurrency_level(**kwargs: object) -> tuple[list[dict[str, object]], float]:
         request_count = int(kwargs["request_count"])
@@ -115,6 +120,8 @@ async def test_async_main_writes_reproducible_artifacts(
         "inference_lab.benchmark.runner",
     ]
     assert summary["manifest"]["runtime"]["gateway_url"] == "http://test"
+    assert summary["manifest"]["runtime"]["model_revision"] == "abc123"
+    assert summary["manifest"]["runtime"]["model_dtype"] == "bfloat16"
     assert summary["manifest"]["user_metadata"]["hardware"]["gpu"] == "test-gpu"
     assert len(summary["trials"]) == 4
     assert len(summary["runs"]) == 2
