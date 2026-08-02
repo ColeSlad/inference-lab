@@ -129,9 +129,10 @@ The MVP is complete when it can:
 - expose Prometheus metrics
 - reproduce one documented comparison with commands and hardware details
 
-The mock backend currently validates the service/benchmark path without claiming performance.
-Real-model serving and the first pinned-hardware comparison remain unverified in this environment;
-both must be demonstrated before the MVP can be called complete.
+The MVP criteria are now met by the audited Qwen3-8B comparison under
+`benchmarks/2026-08-01-qwen3-8b-a100/`. It retains raw rows, summaries, commands, environment
+records, checksums, and plots without treating earlier smoke runs as evidence. Subsequent work
+should expand workload coverage and add quality and GPU-efficiency measurements.
 
 ## Post-MVP milestones
 

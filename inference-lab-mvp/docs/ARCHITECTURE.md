@@ -119,13 +119,12 @@ The MVP intentionally omits authentication, admission control, durable queues, m
 
 ## Prioritized remaining work
 
-1. Run and document the first real-model comparison on pinned NVIDIA hardware. Real-model serving
-   and the final comparison are unverified in this environment; one successful comparison would
-   close both criteria and cannot be replaced by mock timings.
-2. Add safe automated server telemetry capture for GPU memory/utilization and runtime-specific cache
+1. Add safe automated server telemetry capture for GPU memory/utilization and runtime-specific cache
    metrics. The current manifest accepts these as experimenter-supplied metadata.
-3. Complete the remaining long-prefill, decode-heavy, repeated-prefix, and no-reuse datasets before
+2. Complete the remaining long-prefill, decode-heavy, repeated-prefix, and no-reuse datasets before
    drawing conclusions across workload types. The pinned Qwen3-8B short-chat dataset and tokenizer
    report now cover the first workload.
-4. Pin runtime images and produce a dependency lock for published experiments.
-5. Add a small correctness suite so performance comparisons also enforce output quality.
+3. Add a small correctness suite so performance comparisons also enforce output quality.
+4. Convert the recorded dependency freezes into build-enforced locks for future experiments. The
+   first comparison pins the vLLM image and retains exact freezes, but the gateway build did not
+   consume a lock during image construction.

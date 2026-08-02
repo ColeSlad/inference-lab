@@ -1,0 +1,32 @@
+{
+  "provider": {
+    "name": "Lambda Cloud",
+    "hourly_usd": 1.99
+  },
+  "hardware": {
+    "gpu_model": "NVIDIA A100-SXM4-40GB",
+    "gpu_count": 1,
+    "gpu_memory_mib": 40960,
+    "cpu_model": "AMD EPYC 7J13 64-Core Processor",
+    "ram_gib": 216
+  },
+  "software": {
+    "gpu_driver": "580.105.08",
+    "cuda_runtime": "13.0",
+    "python": "3.11.15",
+    "torch": "2.13.0+cu130",
+    "transformers": "5.14.1",
+    "accelerate": "1.14.0",
+    "model_revision": "b968826d9c46dd6066d109eabc6255188de91218",
+    "dependency_freeze": {
+      "path": "results/transformers-qwen3-8b-environment.txt",
+      "sha256": "0f32f25122013d8a25b485283eafdc029fbe0c62e029ab63554f311848b51e63"
+    }
+  },
+  "runtime": {
+    "backend": "transformers",
+    "device": "auto",
+    "dtype": "bfloat16",
+    "generation_serialized": true
+  }
+}

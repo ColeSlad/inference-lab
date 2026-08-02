@@ -2,6 +2,9 @@
 
 A portfolio-ready MVP for comparing LLM inference backends under reproducible concurrent load.
 
+The first audited comparison is complete: [Qwen3-8B on one A100](benchmarks/2026-08-01-qwen3-8b-a100/README.md),
+including raw request rows, summaries, environment records, checksums, and comparison plots.
+
 The project is intentionally focused on **ML systems evidence**, not another chatbot UI. It gives you a stable streaming API, pluggable backends, Prometheus instrumentation, an async load generator, raw experiment artifacts, and a roadmap toward quantization, prefix caching, speculative decoding, Triton, and multi-GPU serving.
 
 ## What the MVP demonstrates
@@ -245,11 +248,21 @@ If an upstream backend omits exact token usage, token counts and output-token th
 `null`; the lab does not estimate them from whitespace. An HTTP 200 stream is counted as successful
 only after a terminal `done` event.
 
-## Plot a summary
+## Plot one or more summaries
 
 ```bash
 pip install -e ".[plots]"
 python scripts/plot_results.py results/vllm.summary.json
+```
+
+To overlay a controlled backend comparison:
+
+```bash
+python scripts/plot_results.py \
+  results/transformers.summary.json \
+  results/vllm.summary.json \
+  --label Transformers \
+  --label vLLM
 ```
 
 The script creates separate throughput, TTFT, and latency figures under `results/plots/`.
