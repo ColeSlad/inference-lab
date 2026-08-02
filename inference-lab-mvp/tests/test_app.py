@@ -22,6 +22,8 @@ def test_health_and_generate() -> None:
         health = client.get("/health")
         assert health.status_code == 200
         assert health.json()["backend"] == "mock"
+        assert health.json()["model_revision"] == "main"
+        assert health.json()["model_dtype"] == "auto"
 
         response = client.post(
             "/v1/generate",

@@ -9,8 +9,17 @@ class MockBackend(InferenceBackend):
 
     name = "mock"
 
-    def __init__(self, model: str, first_token_ms: float, token_ms: float) -> None:
+    def __init__(
+        self,
+        model: str,
+        first_token_ms: float,
+        token_ms: float,
+        model_revision: str | None = None,
+        model_dtype: str | None = None,
+    ) -> None:
         self.model = model
+        self.model_revision = model_revision
+        self.model_dtype = model_dtype
         self.first_token_s = first_token_ms / 1000
         self.token_s = token_ms / 1000
 

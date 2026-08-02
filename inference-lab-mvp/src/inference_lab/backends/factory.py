@@ -10,6 +10,8 @@ def build_backend(settings: Settings) -> InferenceBackend:
             model=settings.model,
             first_token_ms=settings.mock_first_token_ms,
             token_ms=settings.mock_token_ms,
+            model_revision=settings.model_revision,
+            model_dtype=settings.model_dtype,
         )
     if settings.backend == "openai":
         return OpenAICompatibleBackend(
