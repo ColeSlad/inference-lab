@@ -143,11 +143,13 @@ handling policy permits retaining generated text. Hash-only evidence supports ex
 not semantic equivalence, task correctness, or safety claims. Gate reports certify only the
 requirements encoded in their policy.
 
-The next registered study is the
-[Qwen3-8B A100 qualification run](QUALIFICATION_RUN.md). Its policy gates vLLM performance at
-concurrency 32 against a pre-registered regression envelope and evaluates deterministic output
-equivalence across concurrency 1–32. Results remain pending until a new controlled artifact pair
-is collected; the earlier performance-only artifacts cannot satisfy this gate.
+The [Qwen3-8B A100 qualification run](QUALIFICATION_RUN.md) applied a pre-registered policy to a
+new controlled artifact pair. vLLM passed the concurrency-32 performance envelope, while strict
+output equivalence failed across concurrency 1–32; the candidate therefore remained ineligible
+under that policy. The immutable
+[qualification report](../benchmarks/2026-08-02-qwen3-8b-a100-qualification/README.md) retains the
+raw evidence and failed decision without retroactively changing thresholds. The earlier
+performance-only artifacts remain separate and cannot satisfy the equivalence gate.
 
 ## Baseline release acceptance criteria
 
@@ -161,13 +163,14 @@ The baseline release must:
 - enforce a versioned performance-and-equivalence policy for deterministic workloads
 - reproduce one documented comparison with commands and hardware details
 
-The serving and measurement criteria are demonstrated by the audited Qwen3-8B comparison under
-`benchmarks/2026-08-01-qwen3-8b-a100/`. The result set retains raw rows, summaries, commands,
-environment records, checksums, and plots; validation smoke runs are excluded from reported
-evidence. The deterministic policy gate is covered in GPU-free CI. Because the published A100 runs
-predate output-evidence capture, a new controlled reference/candidate pair is required before
-publishing a backend-equivalence result. Subsequent studies expand workload coverage and add
-quality and GPU-efficiency measurements.
+The serving and measurement criteria are demonstrated by the audited performance comparison under
+`benchmarks/2026-08-01-qwen3-8b-a100/`. The policy workflow is demonstrated by the subsequent
+qualification under `benchmarks/2026-08-02-qwen3-8b-a100-qualification/`, which retained a valid
+failed decision after performance passed but exact equivalence did not. Both result sets retain raw
+rows, summaries, commands, environment records, and checksums; validation smoke runs are excluded
+from reported evidence. The deterministic policy gate and published-artifact invariants are
+covered in GPU-free CI. Subsequent studies expand workload coverage and add semantic correctness
+and GPU-efficiency measurements.
 
 ## Evaluation roadmap
 

@@ -2,11 +2,19 @@
 
 ## Status
 
-Registered; results pending.
+Completed 2026-08-02 UTC; deployment eligibility **FAIL** under the registered policy.
 
-This protocol qualifies vLLM against the serialized Transformers reference on the existing
-Qwen3-8B short-chat workload. Register the policy and protocol in a clean Git commit before renting
-hardware or collecting measurements. Do not change thresholds after inspecting the new results.
+This protocol evaluated vLLM against the serialized Transformers reference on the existing
+Qwen3-8B short-chat workload. The policy and protocol were committed before hardware was rented or
+measurements were collected. The immutable artifacts and full analysis are in the
+[qualification report](../benchmarks/2026-08-02-qwen3-8b-a100-qualification/README.md).
+
+The run passed shared controls, artifact consistency, reference stability, evidence coverage, and
+every C32 performance threshold. It failed strict equivalence: 917 of 2,160 candidate outputs
+matched the stable reference output, and none of the ten candidate prompt outputs stayed stable
+across the full repetition/concurrency scope. The failed report was retained without changing the
+registered thresholds. Hash-only evidence does not establish whether non-matching output was
+semantically equivalent or correct.
 
 ## Decision rule
 

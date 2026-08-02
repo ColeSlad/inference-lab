@@ -3,10 +3,12 @@
 Inference Lab is a reproducible evaluation platform for comparing LLM inference backends under
 controlled concurrent load.
 
-**Release status:** the single-node benchmark workflow is validated end to end with deterministic
-CI coverage and an audited [Qwen3-8B comparison on one A100](benchmarks/2026-08-01-qwen3-8b-a100/README.md).
-The published run includes raw request records, aggregate summaries, environment captures,
-checksums, and comparison plots.
+**Release status:** the single-node benchmark and policy workflow is validated end to end with
+deterministic CI coverage, an audited
+[Qwen3-8B performance comparison](benchmarks/2026-08-01-qwen3-8b-a100/README.md), and a subsequent
+[fail-closed backend qualification](benchmarks/2026-08-02-qwen3-8b-a100-qualification/README.md).
+The qualification passed its registered performance envelope and rejected deployment eligibility
+when strict decoded-output equivalence did not hold.
 
 The platform provides a stable streaming API, pluggable runtime adapters, Prometheus
 instrumentation, an asynchronous load generator, auditable experiment artifacts, and a policy gate
@@ -344,15 +346,17 @@ Evidence modes:
 
 Hash evidence avoids storing plaintext but is not anonymization. Treat prompts, hashes, raw output,
 and reports according to the dataset's data-handling requirements. The deterministic gate requires
-temperature zero; sampled-output distribution testing remains a separate roadmap item. The
-published A100 comparison predates output evidence and supports performance claims only—it cannot
-be retroactively used for an equivalence claim.
+temperature zero; sampled-output distribution testing remains a separate roadmap item. The first
+published A100 comparison predates output evidence and supports performance claims only; it cannot
+be retroactively used for an equivalence claim. A later
+[A100 qualification](benchmarks/2026-08-02-qwen3-8b-a100-qualification/README.md) collected hash
+evidence under a pre-registered policy. Performance passed, but exact equivalence and candidate
+stability failed, so the immutable report marks the candidate ineligible for that policy scope.
 
-The next registered hardware run is the
-[Qwen3-8B A100 qualification protocol](docs/QUALIFICATION_RUN.md). Its performance and equivalence
-scopes are independent: C32 carries the deployment-load regression envelope, while output
-equivalence is checked across concurrency 1–32. Thresholds are committed before measurement and
-must not be changed after results are inspected.
+The [Qwen3-8B A100 qualification protocol](docs/QUALIFICATION_RUN.md) keeps performance and
+equivalence scopes independent: C32 carries the deployment-load regression envelope, while output
+equivalence is checked across concurrency 1–32. Its completed record preserves the original
+thresholds and failed decision for regression testing and follow-up investigation.
 
 ## Plot one or more summaries
 
