@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 CONTROL_FIELDS = (
+    ("git.commit", ("git", "commit")),
     ("dataset.sha256", ("dataset", "sha256")),
     ("runtime.model", ("runtime", "model")),
     ("runtime.model_revision", ("runtime", "model_revision")),
@@ -12,6 +13,11 @@ CONTROL_FIELDS = (
     ("request.temperature", ("request", "temperature")),
     ("request.top_p", ("request", "top_p")),
     ("request.seed", ("request", "seed")),
+    ("user_metadata.hardware", ("user_metadata", "hardware")),
+    (
+        "user_metadata.software.gpu_driver",
+        ("user_metadata", "software", "gpu_driver"),
+    ),
 )
 
 
@@ -69,6 +75,19 @@ def compare_controls(
             "passed": temperature == 0,
         }
     )
+    for label, manifest in (
+        ("reference", reference_manifest),
+        ("candidate", candidate_manifest),
+    ):
+        dirty = _nested(manifest, ("git", "dirty"))
+        checks.append(
+            {
+                "name": f"{label}_git_clean",
+                "expected": False,
+                "observed": dirty,
+                "passed": dirty is False,
+            }
+        )
     return {"passed": all(bool(check["passed"]) for check in checks), "checks": checks}
 
 

@@ -33,6 +33,7 @@ def row(prompt: str, output: str, *, concurrency: int) -> dict[str, object]:
 def summary() -> dict[str, object]:
     return {
         "manifest": {
+            "git": {"commit": "commit", "dirty": False},
             "dataset": {"sha256": "dataset"},
             "runtime": {"model": "model", "model_revision": "revision"},
             "request": {
@@ -40,6 +41,10 @@ def summary() -> dict[str, object]:
                 "temperature": 0.0,
                 "top_p": 1.0,
                 "seed": 42,
+            },
+            "user_metadata": {
+                "hardware": {"class": "test"},
+                "software": {"gpu_driver": "not-applicable"},
             },
         }
     }

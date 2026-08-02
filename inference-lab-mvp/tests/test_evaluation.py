@@ -33,6 +33,7 @@ def row(
 def summary(*, model: str = "model", temperature: float = 0.0) -> dict[str, object]:
     return {
         "manifest": {
+            "git": {"commit": "commit", "dirty": False},
             "dataset": {"sha256": "dataset"},
             "runtime": {"model": model, "model_revision": "revision"},
             "request": {
@@ -40,6 +41,10 @@ def summary(*, model: str = "model", temperature: float = 0.0) -> dict[str, obje
                 "temperature": temperature,
                 "top_p": 1.0,
                 "seed": 42,
+            },
+            "user_metadata": {
+                "hardware": {"class": "test"},
+                "software": {"gpu_driver": "not-applicable"},
             },
         }
     }
@@ -183,3 +188,14 @@ def test_control_comparison_requires_same_deterministic_inputs() -> None:
     assert controls["passed"] is False
     failed = {check["name"] for check in controls["checks"] if not check["passed"]}
     assert failed == {"runtime.model", "request.temperature", "deterministic_decoding"}
+
+
+def test_control_comparison_requires_same_hardware_and_clean_git() -> None:
+    candidate = summary()
+    candidate["manifest"]["git"]["dirty"] = True
+    candidate["manifest"]["user_metadata"]["hardware"] = {"class": "different"}
+
+    controls = compare_controls(summary(), candidate)
+
+    failed = {check["name"] for check in controls["checks"] if not check["passed"]}
+    assert failed == {"user_metadata.hardware", "candidate_git_clean"}
