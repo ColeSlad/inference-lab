@@ -2,7 +2,7 @@
 
 ## Goal
 
-Inference Lab isolates three concerns that are often mixed together in AI demos:
+Inference Lab isolates three concerns that are often coupled in inference systems:
 
 1. **Serving** — turn a model runtime into a stable streaming API.
 2. **Measurement** — generate repeatable concurrent load and capture user-visible latency.
@@ -107,17 +107,29 @@ The gateway creates a backend-neutral API, permits identical instrumentation, an
 
 ### Why JSONL instead of a database?
 
-For an MVP, append-friendly artifacts are easier to version, inspect, and reproduce. A database becomes worthwhile after adding experiment tracking, multi-user runs, or a dashboard.
+JSONL is the canonical result format because it is append-friendly, portable, diffable, and easy
+to audit independently of the service. Summary JSON files retain experiment-level metadata and
+aggregates without hiding the underlying request records. A database can index these artifacts
+when centralized experiment tracking or multi-user access becomes necessary; it does not replace
+them as the reproducibility record.
 
-### Why no React dashboard?
+### Why no integrated web dashboard?
 
-The hiring signal is inference measurement and systems depth. A dashboard would consume time while adding little evidence beyond the frontend experience already present on the resume.
+Collection and analysis are deliberately decoupled from presentation. The command-line runner and
+portable artifacts work in headless GPU environments and CI, while the plotting command produces
+reviewable figures from one or more summaries. A dashboard can consume the same artifacts later
+without becoming part of the measurement path.
 
-## Production limitations
+## Operational boundaries
 
-The MVP intentionally omits authentication, admission control, durable queues, multi-tenant quotas, distributed tracing, request cancellation propagation, and automatic model lifecycle management. These are valuable later milestones, not prerequisites for the first benchmarkable release.
+The current deployment profile targets controlled single-node experiments inside a trusted
+environment. The gateway/runtime boundary is suitable for repeatable evaluation, but the gateway
+must not be exposed as a public multi-tenant service without authentication, admission control,
+quotas, request-size limits, transport security, and an explicit model lifecycle policy. Durable
+queues, distributed tracing, and end-to-end cancellation propagation remain platform integration
+work rather than properties of the benchmark protocol.
 
-## Prioritized remaining work
+## Prioritized engineering work
 
 1. Add safe automated server telemetry capture for GPU memory/utilization and runtime-specific cache
    metrics. The current manifest accepts these as experimenter-supplied metadata.

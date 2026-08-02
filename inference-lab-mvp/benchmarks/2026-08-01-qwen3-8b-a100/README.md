@@ -1,9 +1,9 @@
-# Qwen3-8B short-chat comparison on one A100
+# Qwen3-8B backend comparison on one A100
 
-This is the first completed Inference Lab comparison. It measures the intentionally serialized
-Hugging Face Transformers baseline against vLLM continuous serving on the same rented GPU. All
-numbers below come from the committed summaries and raw request records; smoke timings are not
-included.
+This report records a controlled short-chat comparison between the serialized Hugging Face
+Transformers reference backend and vLLM continuous serving on the same rented GPU. All numbers
+below come from the committed summaries and raw request records; validation smoke timings are
+excluded.
 
 ## Result
 

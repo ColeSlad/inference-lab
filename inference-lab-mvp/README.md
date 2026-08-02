@@ -1,22 +1,28 @@
 # Inference Lab
 
-A portfolio-ready MVP for comparing LLM inference backends under reproducible concurrent load.
+Inference Lab is a reproducible evaluation platform for comparing LLM inference backends under
+controlled concurrent load.
 
-The first audited comparison is complete: [Qwen3-8B on one A100](benchmarks/2026-08-01-qwen3-8b-a100/README.md),
-including raw request rows, summaries, environment records, checksums, and comparison plots.
+**Release status:** the single-node benchmark workflow is validated end to end with deterministic
+CI coverage and an audited [Qwen3-8B comparison on one A100](benchmarks/2026-08-01-qwen3-8b-a100/README.md).
+The published run includes raw request records, aggregate summaries, environment captures,
+checksums, and comparison plots.
 
-The project is intentionally focused on **ML systems evidence**, not another chatbot UI. It gives you a stable streaming API, pluggable backends, Prometheus instrumentation, an async load generator, raw experiment artifacts, and a roadmap toward quantization, prefix caching, speculative decoding, Triton, and multi-GPU serving.
+The platform provides a stable streaming API, pluggable runtime adapters, Prometheus
+instrumentation, an asynchronous load generator, and auditable experiment artifacts. Its scope is
+inference serving and measurement; application-specific chat interfaces remain outside the core
+system.
 
-## What the MVP demonstrates
+## Platform capabilities
 
-- backend-neutral inference service design
-- streaming generation and time-to-first-token measurement
-- concurrent load generation with controlled workloads
-- P50/P95 latency and throughput analysis
-- observability with Prometheus
-- Dockerized vLLM deployment
-- deterministic, GPU-free CI
-- clean extension points for deeper inference work
+- Backend-neutral synchronous and streaming inference contracts
+- Deterministic mock, serialized Transformers, and OpenAI-compatible runtime adapters
+- Controlled concurrent load with warm-up isolation and repeated trials
+- Client-visible TTFT, end-to-end latency, request throughput, token throughput, and failure metrics
+- Prometheus instrumentation for the gateway and vLLM runtime
+- Containerized single-GPU vLLM deployment
+- Reproducibility manifests covering source, dataset, model, runtime, and environment identity
+- GPU-free CI for API, adapter, benchmark, and artifact-integrity paths
 
 ## Architecture
 
@@ -61,9 +67,11 @@ src/inference_lab/
     openai_compatible.py       vLLM adapter
   benchmark/
     runner.py                  Concurrent benchmark CLI
+    dataset_tokens.py          Tokenizer-aware workload validation
     stats.py                   Percentiles and throughput summaries
 scripts/plot_results.py        Result plotting
-data/prompts.jsonl             Starter workload
+data/                          Versioned benchmark workloads and token reports
+benchmarks/                    Audited result sets and integrity checksums
 docs/                          Architecture and experiment plan
 tests/                         API and statistics tests
 ```
@@ -143,13 +151,36 @@ INFERENCE_LAB_BACKEND=openai docker compose --profile gpu up --build
 
 The gateway is exposed on port `8000`, vLLM on port `8001`, and Prometheus on port `9090`.
 This base Compose file leaves prefix caching disabled so it can serve as the vLLM default
-configuration in the first experiment.
+configuration in the reference comparison.
 
 For a measured comparison, set `INFERENCE_LAB_MODEL_REVISION` to a full Hugging Face commit SHA
 and `INFERENCE_LAB_MODEL_DTYPE` to the same explicit dtype for both backends. Compose passes both
 values to vLLM, while the Transformers adapter passes the revision to the tokenizer and model.
 The gateway health response and benchmark manifest report the configured values. The defaults
 `main` and `auto` are convenient for smoke testing but are not publishable controls.
+
+### Service acceptance checks
+
+Treat the gateway as ready only after `/health` returns HTTP 200 and reports the expected backend,
+model, revision, and dtype:
+
+```bash
+docker compose --profile gpu ps
+curl --fail --silent --show-error http://localhost:8000/health |
+  python -m json.tool
+curl --fail --silent --show-error http://localhost:8000/metrics/ >/dev/null
+```
+
+The benchmark runner performs the health preflight again before sending warm-up or measured
+traffic. Use `docker compose logs gateway vllm` for service diagnostics. Stop the local stack with:
+
+```bash
+docker compose --profile gpu down
+```
+
+Stopping the stack does not remove benchmark artifacts or the host Hugging Face cache. Keep model
+credentials in environment variables and never place secrets in benchmark metadata or committed
+environment captures.
 
 ## Validate a workload against the pinned tokenizer
 
@@ -308,9 +339,10 @@ The runner records client-visible facts automatically. Hardware, driver, exact m
 container digest, and runtime-only flags must be supplied through `--metadata` and verified by the
 experimenter.
 
-See [`docs/EXPERIMENT_PLAN.md`](docs/EXPERIMENT_PLAN.md) for the first publishable study.
+See [`docs/EXPERIMENT_PLAN.md`](docs/EXPERIMENT_PLAN.md) for the controlled study protocol and
+evaluation roadmap.
 
-## High-value next milestones
+## Engineering roadmap
 
 1. Compare BF16/FP16, INT8, and INT4 for speed, memory, and quality.
 2. Build repeated-prefix workloads and measure prefix-caching impact.
@@ -319,10 +351,10 @@ See [`docs/EXPERIMENT_PLAN.md`](docs/EXPERIMENT_PLAN.md) for the first publishab
 5. Compare single-GPU and tensor-parallel multi-GPU serving.
 6. Add a small reasoning/coding quality suite so performance is never reported without correctness.
 
-## Resume outcome to target
+## Deployment scope
 
-Do not add the project to your resume until you have real hardware results. A strong final bullet should resemble:
-
-> Built a reproducible LLM serving benchmark across Hugging Face and vLLM, increasing output throughput from X to Y tokens/s at concurrency 16 while tracking P95 TTFT, latency, GPU memory, and correctness.
-
-Replace every placeholder with measured results and state the model and hardware in the repository report.
+Inference Lab is designed for controlled benchmarking on trusted single-node infrastructure. The
+gateway is not an internet-facing multi-tenant control plane: deployments that cross a trust
+boundary must add authentication, authorization, admission control, quotas, request limits, and
+transport security at the platform edge. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the
+component boundaries and prioritized operational work.

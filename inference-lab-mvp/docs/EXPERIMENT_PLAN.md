@@ -4,7 +4,7 @@
 
 How do serving runtime and concurrency affect user-visible latency, throughput, and GPU efficiency for the same language model and prompt workload?
 
-## MVP hypotheses
+## Evaluation hypotheses
 
 1. A simple Transformers baseline will be competitive at concurrency 1 but degrade under concurrent requests.
 2. vLLM will sustain higher output-token throughput as concurrency rises.
@@ -26,11 +26,12 @@ Keep these identical within an experiment:
 
 Record the exact command, Git commit, image digest, hardware, date, and environment variables with every published result.
 
-## Suggested first experiment
+## Reference experiment design
 
 ### Hardware
 
-Use one NVIDIA GPU with enough memory for the selected model. Start with a small model to validate the system, then repeat on a 7B–8B class model when hardware permits.
+Use one NVIDIA GPU with enough memory for the selected model. Validate the execution path with a
+low-cost model before collecting the controlled 7B–8B class comparison.
 
 ### Backends
 
@@ -118,9 +119,9 @@ client environment, backend/model identity, per-trial summaries, and aggregate m
 a run as publishable when the Git state is dirty, required server metadata is missing, an image uses
 a floating tag, or exact token usage is unavailable for a token-throughput claim.
 
-## MVP completion criteria
+## Baseline release acceptance criteria
 
-The MVP is complete when it can:
+The baseline release must:
 
 - pass CI without a GPU using the mock backend
 - serve streaming text through the same gateway from at least one real model backend
@@ -129,29 +130,30 @@ The MVP is complete when it can:
 - expose Prometheus metrics
 - reproduce one documented comparison with commands and hardware details
 
-The MVP criteria are now met by the audited Qwen3-8B comparison under
-`benchmarks/2026-08-01-qwen3-8b-a100/`. It retains raw rows, summaries, commands, environment
-records, checksums, and plots without treating earlier smoke runs as evidence. Subsequent work
-should expand workload coverage and add quality and GPU-efficiency measurements.
+The baseline release meets these criteria through the audited Qwen3-8B comparison under
+`benchmarks/2026-08-01-qwen3-8b-a100/`. The result set retains raw rows, summaries, commands,
+environment records, checksums, and plots; validation smoke runs are excluded from reported
+evidence. Subsequent studies expand workload coverage and add quality and GPU-efficiency
+measurements.
 
-## Post-MVP milestones
+## Evaluation roadmap
 
-### Milestone 2: Quantization study
+### Quantization study
 
 Compare BF16/FP16, INT8, and INT4 where supported. Measure speed, VRAM, and quality on a small reasoning/coding set.
 
-### Milestone 3: Prefix caching and workload-aware analysis
+### Prefix caching and workload-aware analysis
 
 Construct repeated-prefix and no-reuse datasets. Measure cache hit behavior and TTFT changes.
 
-### Milestone 4: Speculative decoding
+### Speculative decoding
 
 Add a draft model, record acceptance rate, and identify workload regimes where the extra machinery helps or hurts.
 
-### Milestone 5: Triton kernel
+### Triton kernel
 
 Profile the runtime, select one isolated operator or preprocessing bottleneck, implement a Triton version, validate numerical correctness, and report operator-level plus end-to-end impact.
 
-### Milestone 6: Multi-GPU serving
+### Multi-GPU serving
 
 Evaluate tensor parallelism, communication overhead, throughput scaling, and failure behavior on two or more GPUs.
