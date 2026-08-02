@@ -348,6 +348,12 @@ temperature zero; sampled-output distribution testing remains a separate roadmap
 published A100 comparison predates output evidence and supports performance claims only—it cannot
 be retroactively used for an equivalence claim.
 
+The next registered hardware run is the
+[Qwen3-8B A100 qualification protocol](docs/QUALIFICATION_RUN.md). Its performance and equivalence
+scopes are independent: C32 carries the deployment-load regression envelope, while output
+equivalence is checked across concurrency 1–32. Thresholds are committed before measurement and
+must not be changed after results are inspected.
+
 ## Plot one or more summaries
 
 ```bash

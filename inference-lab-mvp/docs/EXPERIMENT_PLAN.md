@@ -143,6 +143,12 @@ handling policy permits retaining generated text. Hash-only evidence supports ex
 not semantic equivalence, task correctness, or safety claims. Gate reports certify only the
 requirements encoded in their policy.
 
+The next registered study is the
+[Qwen3-8B A100 qualification run](QUALIFICATION_RUN.md). Its policy gates vLLM performance at
+concurrency 32 against a pre-registered regression envelope and evaluates deterministic output
+equivalence across concurrency 1–32. Results remain pending until a new controlled artifact pair
+is collected; the earlier performance-only artifacts cannot satisfy this gate.
+
 ## Baseline release acceptance criteria
 
 The baseline release must:

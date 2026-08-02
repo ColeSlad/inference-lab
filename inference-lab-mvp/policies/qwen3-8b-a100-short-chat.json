@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "name": "qwen3-8b-a100-short-chat-v1",
+  "performance": {
+    "target_concurrency": [32],
+    "max_failure_rate": 0.0,
+    "max_ttft_ms_p95": 250,
+    "max_latency_ms_p95": 1250,
+    "min_request_throughput_rps": 27,
+    "min_output_throughput_tokens_per_s": 1720
+  },
+  "equivalence": {
+    "target_concurrency": [1, 2, 4, 8, 16, 32],
+    "min_exact_match_rate": 1.0,
+    "min_concurrency_stability_rate": 1.0,
+    "mismatch_limit": 50
+  }
+}

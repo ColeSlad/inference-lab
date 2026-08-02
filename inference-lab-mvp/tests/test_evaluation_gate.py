@@ -151,6 +151,16 @@ def test_committed_example_policy_is_valid() -> None:
     assert loaded.performance.target_concurrency == [8]
 
 
+def test_registered_qwen_policy_has_separate_scopes() -> None:
+    project_root = Path(__file__).resolve().parents[1]
+
+    loaded = load_policy(project_root / "policies" / "qwen3-8b-a100-short-chat.json")
+
+    assert loaded.performance.target_concurrency == [32]
+    assert loaded.equivalence.target_concurrency == [1, 2, 4, 8, 16, 32]
+    assert loaded.equivalence.min_exact_match_rate == 1.0
+
+
 def test_report_passes_only_when_all_sections_pass() -> None:
     reference = with_experiment([row("prompt", "same", concurrency=1)], "reference")
     candidate = with_experiment([row("prompt", "same", concurrency=8)], "candidate")

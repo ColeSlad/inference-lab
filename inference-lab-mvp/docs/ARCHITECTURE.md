@@ -118,6 +118,10 @@ The gate verifies the following layers before reporting eligibility:
    the required rate, and candidate output remains stable across the evaluated concurrency levels
    and repetitions.
 
+Performance and equivalence scopes are configured independently. A policy can qualify performance
+at the intended deployment load while checking deterministic output behavior across a wider
+concurrency sweep.
+
 Output evidence is opt-in at collection time. `hash` mode records SHA-256 digests for exact
 comparison without placing plaintext in the result rows. `text` mode additionally enables a
 character-prefix ratio and first-divergent-character diagnostics; mismatch reports contain hashes,
