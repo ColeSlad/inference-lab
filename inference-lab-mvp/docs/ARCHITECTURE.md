@@ -72,6 +72,8 @@ The runner sends a fixed number of requests at each concurrency level and record
 - P50 and P95 latency summaries
 
 Raw request results are retained rather than only storing aggregates, which permits later statistical checks and graphs.
+Per-trial wall time retains the full timer value used as the throughput denominator, allowing
+serialized trial throughput to be recomputed without a hidden rounding discrepancy.
 
 Before every measured concurrency/repetition pair, the runner sends a configurable warm-up batch
 that is excluded from artifacts. Each request is linked to an experiment, repetition, concurrency,

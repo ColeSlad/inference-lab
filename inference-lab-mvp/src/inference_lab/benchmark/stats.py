@@ -52,7 +52,9 @@ def summarize_results(
         "failure_rate": round((len(results) - len(successes)) / len(results), 6)
         if results
         else 0.0,
-        "wall_time_s": round(wall_time_s, 6),
+        # Preserve the timer value used for throughput so a serialized trial can be
+        # recomputed exactly. Aggregate summaries still round medians for display.
+        "wall_time_s": wall_time_s,
         "request_throughput_rps": round(len(successes) / safe_wall_time, 4),
         "output_throughput_tokens_per_s": (
             round(output_tokens / safe_wall_time, 4) if token_counts_complete else None

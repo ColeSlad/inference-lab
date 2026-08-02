@@ -1,3 +1,5 @@
+import json
+
 from inference_lab.benchmark.stats import percentile, summarize_repetitions, summarize_results
 
 
@@ -17,6 +19,26 @@ def test_summary_calculates_throughput() -> None:
     assert summary["failure_rate"] == 0.333333
     assert summary["request_throughput_rps"] == 1.0
     assert summary["output_throughput_tokens_per_s"] == 20.0
+
+
+def test_serialized_trial_retains_throughput_denominator() -> None:
+    rows = [
+        {"status": "ok", "ttft_ms": 10, "total_latency_ms": 100, "output_tokens": 64}
+    ]
+    summary = summarize_results(rows, concurrency=1, wall_time_s=4.023987654321)
+    serialized = json.loads(json.dumps(summary))
+    recomputed = summarize_results(
+        rows,
+        concurrency=1,
+        wall_time_s=serialized["wall_time_s"],
+    )
+
+    assert serialized["wall_time_s"] == 4.023987654321
+    assert recomputed["request_throughput_rps"] == serialized["request_throughput_rps"]
+    assert (
+        recomputed["output_throughput_tokens_per_s"]
+        == serialized["output_throughput_tokens_per_s"]
+    )
 
 
 def test_summary_does_not_invent_missing_token_counts() -> None:
