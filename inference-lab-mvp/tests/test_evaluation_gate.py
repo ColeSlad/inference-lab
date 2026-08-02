@@ -189,6 +189,31 @@ def test_control_mismatch_makes_report_ineligible() -> None:
     assert report["deployment_eligibility"]["failed_sections"] == ["controls"]
 
 
+def test_equivalence_scope_is_independent_from_performance_scope() -> None:
+    reference = with_experiment([row("prompt", "same", concurrency=1)], "reference")
+    candidate = with_experiment(
+        [
+            row("prompt", "changed", concurrency=1),
+            row("prompt", "same", concurrency=8),
+        ],
+        "candidate",
+    )
+
+    report = build_evaluation_report(
+        reference_rows=reference,
+        candidate_rows=candidate,
+        reference_summary=reference_summary(),
+        candidate_summary=candidate_summary(),
+        policy=policy(),
+    )
+
+    assert report["performance"]["target_concurrency"] == [8]
+    assert report["performance"]["passed"] is True
+    assert report["equivalence"]["target_concurrency"] == [1, 8]
+    assert report["equivalence"]["passed"] is False
+    assert report["deployment_eligibility"]["eligible"] is False
+
+
 def test_evaluate_files_records_every_input_digest(tmp_path: Path) -> None:
     files = {
         "reference": tmp_path / "reference.jsonl",

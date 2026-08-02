@@ -55,10 +55,22 @@ class PerformancePolicy(BaseModel):
 class EquivalencePolicy(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    target_concurrency: list[int] | None = None
     min_exact_match_rate: float = Field(default=1.0, ge=0, le=1)
     min_matching_prefix_character_ratio: float | None = Field(default=None, ge=0, le=1)
     min_concurrency_stability_rate: float = Field(default=1.0, ge=0, le=1)
     mismatch_limit: int = Field(default=20, ge=0, le=1_000)
+
+    @field_validator("target_concurrency")
+    @classmethod
+    def validate_target_concurrency(cls, value: list[int] | None) -> list[int] | None:
+        if value is None:
+            return None
+        if not value or any(item < 1 for item in value):
+            raise ValueError("target_concurrency must contain positive integers")
+        if len(value) != len(set(value)):
+            raise ValueError("target_concurrency must not contain duplicates")
+        return value
 
 
 class EvaluationPolicy(BaseModel):
@@ -155,7 +167,24 @@ def build_evaluation_report(
 ) -> dict[str, Any]:
     controls = compare_controls(reference_summary, candidate_summary)
     performance = evaluate_performance(candidate_summary, policy.performance)
-    target_concurrency = set(performance["target_concurrency"])
+    candidate_concurrency = {
+        row.get("concurrency")
+        for row in candidate_rows
+        if isinstance(row.get("concurrency"), int)
+        and not isinstance(row.get("concurrency"), bool)
+    }
+    equivalence_targets = policy.equivalence.target_concurrency or sorted(
+        candidate_concurrency
+    )
+    missing_equivalence_targets = sorted(
+        set(equivalence_targets) - candidate_concurrency
+    )
+    if missing_equivalence_targets:
+        raise ValueError(
+            "Candidate results are missing equivalence target concurrency: "
+            f"{missing_equivalence_targets}"
+        )
+    target_concurrency = set(equivalence_targets)
     evaluated_candidate_rows = [
         row for row in candidate_rows if row.get("concurrency") in target_concurrency
     ]
@@ -175,6 +204,7 @@ def build_evaluation_report(
         ),
         mismatch_limit=equivalence_policy.mismatch_limit,
     )
+    equivalence["target_concurrency"] = equivalence_targets
     artifact_consistency = _artifact_consistency(
         reference_rows,
         candidate_rows,
