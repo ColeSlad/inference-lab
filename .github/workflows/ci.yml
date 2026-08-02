@@ -3,10 +3,14 @@ name: CI
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: inference-lab-mvp
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -17,4 +21,9 @@ jobs:
       - run: ruff check .
       - run: pytest
       - run: docker compose --profile gpu config --quiet
-      - run: docker compose -f docker-compose.yml -f docker-compose.prefix-cache.yml --profile gpu config --quiet
+      - run: >-
+          docker compose
+          -f docker-compose.yml
+          -f docker-compose.prefix-cache.yml
+          --profile gpu
+          config --quiet
