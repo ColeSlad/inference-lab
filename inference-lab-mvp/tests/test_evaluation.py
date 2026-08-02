@@ -115,6 +115,24 @@ def test_errors_and_unstable_outputs_fail_equivalence() -> None:
     assert result["concurrency_stability_rate"] == 0.0
 
 
+def test_reference_errors_invalidate_reference_stability() -> None:
+    reference = [
+        row("prompt", "reference", concurrency=1),
+        {
+            "status": "error",
+            "prompt_sha256": digest("prompt"),
+            "concurrency": 1,
+        },
+    ]
+    candidate = [row("prompt", "reference", concurrency=1)]
+
+    result = evaluate_equivalence(reference, candidate)
+
+    assert result["passed"] is False
+    assert result["reference_stability_rate"] == 0.0
+    assert result["comparable_requests"] == 0
+
+
 def test_output_hash_must_match_captured_text() -> None:
     reference = [row("prompt", "reference", concurrency=1)]
     candidate = [row("prompt", "candidate", concurrency=1, evidence="text")]

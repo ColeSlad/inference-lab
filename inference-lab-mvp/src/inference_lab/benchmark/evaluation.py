@@ -94,7 +94,9 @@ def evaluate_equivalence(
     reference_by_prompt = _group_by_prompt(reference_rows)
     candidate_by_prompt = _group_by_prompt(candidate_rows)
     reference_digests = {
-        prompt_sha256: {_output_digest(row) for row in rows}
+        prompt_sha256: {
+            _output_digest(row) if row.get("status") == "ok" else None for row in rows
+        }
         for prompt_sha256, rows in reference_by_prompt.items()
     }
     stable_reference_digests = {
