@@ -73,7 +73,6 @@ git pull --ff-only
 git status --porcelain
 git rev-parse HEAD
 
-cd inference-lab-mvp
 source .venv/bin/activate
 python --version
 pytest
