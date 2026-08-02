@@ -27,10 +27,21 @@ async def test_run_one_records_complete_stream() -> None:
         return httpx.Response(200, text=f"{content}\n\n")
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
-        result = await runner.run_one(client, "http://test", "a prompt", 4, 0.0, 0.9, 42)
+        result = await runner.run_one(
+            client,
+            "http://test",
+            "a prompt",
+            4,
+            0.0,
+            0.9,
+            42,
+            output_evidence="text",
+        )
 
     assert result["status"] == "ok"
     assert result["output_chars"] == 5
+    assert result["output_text"] == "hello"
+    assert result["output_sha256"] == hashlib.sha256(b"hello").hexdigest()
     assert result["server_ttft_ms"] == 1
     assert seen_payload["top_p"] == 0.9
 
@@ -45,6 +56,33 @@ async def test_run_one_rejects_stream_without_done_event() -> None:
 
     assert result["status"] == "error"
     assert result["error"] == "Stream ended without a terminal done event"
+
+
+@pytest.mark.asyncio
+async def test_run_one_hashes_output_without_retaining_text() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        content = "\n\n".join(
+            [
+                'data: {"type":"chunk","text":"sensitive"}',
+                'data: {"type":"done","backend":"mock","model":"test"}',
+            ]
+        )
+        return httpx.Response(200, text=f"{content}\n\n")
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        result = await runner.run_one(
+            client,
+            "http://test",
+            "prompt",
+            4,
+            0.0,
+            1.0,
+            42,
+            output_evidence="hash",
+        )
+
+    assert result["output_sha256"] == hashlib.sha256(b"sensitive").hexdigest()
+    assert "output_text" not in result
 
 
 @pytest.mark.asyncio
@@ -99,6 +137,7 @@ async def test_async_main_writes_reproducible_artifacts(
         top_p=1.0,
         seed=42,
         timeout=10.0,
+        output_evidence="hash",
         metadata=metadata,
         output=output,
         command="inference-lab-bench --test",
@@ -122,6 +161,7 @@ async def test_async_main_writes_reproducible_artifacts(
     assert summary["manifest"]["runtime"]["gateway_url"] == "http://test"
     assert summary["manifest"]["runtime"]["model_revision"] == "abc123"
     assert summary["manifest"]["runtime"]["model_dtype"] == "bfloat16"
+    assert summary["manifest"]["request"]["output_evidence"] == "hash"
     assert summary["manifest"]["user_metadata"]["hardware"]["gpu"] == "test-gpu"
     assert len(summary["trials"]) == 4
     assert len(summary["runs"]) == 2

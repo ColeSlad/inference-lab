@@ -18,8 +18,9 @@ import httpx
 
 from inference_lab.benchmark.stats import summarize_repetitions, summarize_results
 
-ARTIFACT_SCHEMA_VERSION = 1
+ARTIFACT_SCHEMA_VERSION = 2
 RECORDED_PACKAGES = ("inference-lab", "httpx", "pydantic")
+OUTPUT_EVIDENCE_MODES = ("none", "hash", "text")
 
 
 def load_prompts(path: Path) -> list[str]:
@@ -110,6 +111,7 @@ async def run_one(
     temperature: float,
     top_p: float,
     seed: int | None,
+    output_evidence: str = "none",
 ) -> dict[str, Any]:
     payload: dict[str, object] = {
         "prompt": prompt,
@@ -152,7 +154,7 @@ async def run_one(
             raise RuntimeError("Stream ended without a terminal done event")
 
         finished = time.perf_counter()
-        return {
+        result = {
             "status": "ok",
             "request_started_at_utc": request_started_at,
             "prompt_chars": len(prompt),
@@ -168,6 +170,11 @@ async def run_one(
             "backend": final_event.get("backend"),
             "model": final_event.get("model"),
         }
+        if output_evidence in {"hash", "text"}:
+            result["output_sha256"] = hashlib.sha256(output_text.encode("utf-8")).hexdigest()
+        if output_evidence == "text":
+            result["output_text"] = output_text
+        return result
     except Exception as exc:
         return {
             "status": "error",
@@ -189,6 +196,7 @@ async def run_concurrency_level(
     top_p: float,
     seed: int | None,
     timeout_s: float,
+    output_evidence: str = "none",
 ) -> tuple[list[dict[str, Any]], float]:
     semaphore = asyncio.Semaphore(concurrency)
     selected_prompts = list(islice(cycle(prompts), request_count))
@@ -205,6 +213,7 @@ async def run_concurrency_level(
                     temperature,
                     top_p,
                     seed,
+                    output_evidence,
                 )
 
         started = time.perf_counter()
@@ -239,6 +248,7 @@ def build_manifest(
             "temperature": args.temperature,
             "top_p": args.top_p,
             "seed": args.seed,
+            "output_evidence": args.output_evidence,
         },
         "benchmark": {
             "concurrency": args.concurrency,
@@ -287,6 +297,7 @@ async def async_main(args: argparse.Namespace) -> None:
                         top_p=args.top_p,
                         seed=args.seed,
                         timeout_s=args.timeout,
+                        output_evidence="none",
                     )
                     warmup_failures = [row for row in warmups if row.get("status") != "ok"]
                     if warmup_failures:
@@ -305,6 +316,7 @@ async def async_main(args: argparse.Namespace) -> None:
                     top_p=args.top_p,
                     seed=args.seed,
                     timeout_s=args.timeout,
+                    output_evidence=args.output_evidence,
                 )
                 for request_index, row in enumerate(results):
                     prompt_index = request_index % len(prompts)
@@ -362,6 +374,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--top-p", type=float, default=1.0)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--timeout", type=float, default=240.0)
+    parser.add_argument(
+        "--output-evidence",
+        choices=OUTPUT_EVIDENCE_MODES,
+        default="none",
+        help=(
+            "Output evidence retained in raw rows: none, SHA-256 hash only, or full text plus hash."
+        ),
+    )
     parser.add_argument(
         "--metadata",
         type=Path,
