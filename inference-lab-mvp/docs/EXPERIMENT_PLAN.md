@@ -75,6 +75,13 @@ Secondary:
 - input/output token counts
 - cost estimate for rented GPU time
 
+Release-gate metrics for deterministic workloads:
+
+- exact output match rate against a stable reference backend
+- output stability across repetitions and target concurrency levels
+- matching-prefix character ratio when plaintext evidence is explicitly retained
+- SLO-compliant eligibility under a versioned performance-and-equivalence policy
+
 ## Procedure
 
 1. Pin the repository commit and runtime image.
@@ -119,6 +126,23 @@ client environment, backend/model identity, per-trial summaries, and aggregate m
 a run as publishable when the Git state is dirty, required server metadata is missing, an image uses
 a floating tag, or exact token usage is unavailable for a token-throughput claim.
 
+### Performance-and-equivalence procedure
+
+For deterministic backend qualification, collect the reference and candidate with
+`--output-evidence hash` in addition to the controls above. Evaluate the resulting artifact pairs
+with `inference-lab-evaluate` and a committed policy from `policies/`. A valid gate requires:
+
+- temperature zero and identical dataset, model revision, output limit, top-p, and seed
+- matching raw/summary experiment identities
+- stable reference output for every prompt
+- complete candidate evidence at each selected concurrency
+- every configured performance and equivalence threshold to pass
+
+Use `--output-evidence text` only when prefix-divergence analysis is required and the dataset's
+handling policy permits retaining generated text. Hash-only evidence supports exact equivalence but
+not semantic equivalence, task correctness, or safety claims. Gate reports certify only the
+requirements encoded in their policy.
+
 ## Baseline release acceptance criteria
 
 The baseline release must:
@@ -128,19 +152,24 @@ The baseline release must:
 - benchmark at three or more concurrency levels
 - save raw and summarized results
 - expose Prometheus metrics
+- enforce a versioned performance-and-equivalence policy for deterministic workloads
 - reproduce one documented comparison with commands and hardware details
 
-The baseline release meets these criteria through the audited Qwen3-8B comparison under
+The serving and measurement criteria are demonstrated by the audited Qwen3-8B comparison under
 `benchmarks/2026-08-01-qwen3-8b-a100/`. The result set retains raw rows, summaries, commands,
 environment records, checksums, and plots; validation smoke runs are excluded from reported
-evidence. Subsequent studies expand workload coverage and add quality and GPU-efficiency
-measurements.
+evidence. The deterministic policy gate is covered in GPU-free CI. Because the published A100 runs
+predate output-evidence capture, a new controlled reference/candidate pair is required before
+publishing a backend-equivalence result. Subsequent studies expand workload coverage and add
+quality and GPU-efficiency measurements.
 
 ## Evaluation roadmap
 
 ### Quantization study
 
-Compare BF16/FP16, INT8, and INT4 where supported. Measure speed, VRAM, and quality on a small reasoning/coding set.
+Compare BF16/FP16, INT8, and INT4 where supported. Measure speed, VRAM, and quality on a small
+reasoning/coding set. Require every candidate to pass a workload-specific equivalence or correctness
+policy before including its performance result on the acceptable Pareto frontier.
 
 ### Prefix caching and workload-aware analysis
 
@@ -157,3 +186,8 @@ Profile the runtime, select one isolated operator or preprocessing bottleneck, i
 ### Multi-GPU serving
 
 Evaluate tensor parallelism, communication overhead, throughput scaling, and failure behavior on two or more GPUs.
+
+### Sampled-output equivalence
+
+Add repeated sampled generations and compare output or task-score distributions. Do not apply the
+deterministic exact-match gate to temperature-positive workloads.

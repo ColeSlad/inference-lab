@@ -24,6 +24,10 @@ flowchart LR
     P --> VM
     B --> R[Raw JSONL + summary JSON]
     R --> C[Plotting script]
+    R --> E[Performance + equivalence gate]
+    RP[Reference artifacts] --> E
+    EP[Evaluation policy] --> E
+    E --> ER[Eligibility report]
 ```
 
 ## Components
@@ -99,6 +103,33 @@ The gateway exposes Prometheus counters, gauges, and histograms for:
 
 When vLLM is enabled, Prometheus can scrape both the gateway and runtime. This separates user-visible API behavior from engine-level behavior.
 
+### Performance and equivalence gate
+
+The evaluation gate consumes reference and candidate raw results, their summaries, and a versioned
+policy. It does not call either backend, so the decision can be reproduced from retained artifacts.
+The gate verifies the following layers before reporting eligibility:
+
+1. The model ID, full model revision, dataset digest, output limit, temperature, top-p, and seed
+   match between reference and candidate manifests.
+2. Raw rows belong to the experiment IDs declared by their corresponding summaries.
+3. Candidate aggregate metrics satisfy every configured performance threshold at every target
+   concurrency level.
+4. Reference output is stable for every prompt, candidate output matches the stable reference at
+   the required rate, and candidate output remains stable across the evaluated concurrency levels
+   and repetitions.
+
+Output evidence is opt-in at collection time. `hash` mode records SHA-256 digests for exact
+comparison without placing plaintext in the result rows. `text` mode additionally enables a
+character-prefix ratio and first-divergent-character diagnostics; mismatch reports contain hashes,
+lengths, and offsets rather than copying output text. An inconsistent plaintext/digest pair is an
+artifact integrity error.
+
+The first gate supports deterministic decoding only. It requires temperature zero and fails closed
+on missing controls, metrics, evidence, or unstable reference output. Model dtype is recorded but
+is deliberately not an equality control so quantized candidates can be evaluated against a BF16
+reference. Extending the gate to sampled decoding requires distributional tests rather than exact
+per-request matching.
+
 ## Design decisions
 
 ### Why a gateway instead of benchmarking vLLM directly?
@@ -137,6 +168,8 @@ work rather than properties of the benchmark protocol.
    drawing conclusions across workload types. The pinned Qwen3-8B short-chat dataset and tokenizer
    report now cover the first workload.
 3. Add a small correctness suite so performance comparisons also enforce output quality.
-4. Convert the recorded dependency freezes into build-enforced locks for future experiments. The
+4. Add task-specific evaluators and sampled-output distribution tests to complement the existing
+   deterministic equivalence gate.
+5. Convert the recorded dependency freezes into build-enforced locks for future experiments. The
    first comparison pins the vLLM image and retains exact freezes, but the gateway build did not
    consume a lock during image construction.

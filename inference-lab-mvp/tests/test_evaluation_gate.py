@@ -10,6 +10,7 @@ from inference_lab.benchmark.gate import (
     build_evaluation_report,
     evaluate_files,
     evaluate_performance,
+    load_policy,
     parse_args,
 )
 
@@ -134,6 +135,15 @@ def test_policy_rejects_unknown_fields_and_empty_performance() -> None:
         )
     with pytest.raises(ValidationError, match="at least one threshold"):
         EvaluationPolicy.model_validate({"name": "empty", "performance": {}})
+
+
+def test_committed_example_policy_is_valid() -> None:
+    project_root = Path(__file__).resolve().parents[1]
+
+    loaded = load_policy(project_root / "policies" / "deterministic-serving.example.json")
+
+    assert loaded.name == "example-deterministic-serving-policy"
+    assert loaded.performance.target_concurrency == [8]
 
 
 def test_report_passes_only_when_all_sections_pass() -> None:

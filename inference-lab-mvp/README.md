@@ -9,9 +9,10 @@ The published run includes raw request records, aggregate summaries, environment
 checksums, and comparison plots.
 
 The platform provides a stable streaming API, pluggable runtime adapters, Prometheus
-instrumentation, an asynchronous load generator, and auditable experiment artifacts. Its scope is
-inference serving and measurement; application-specific chat interfaces remain outside the core
-system.
+instrumentation, an asynchronous load generator, auditable experiment artifacts, and a policy gate
+that rejects faster backends when they violate performance or deterministic-equivalence
+requirements. Its scope is inference serving and measurement; application-specific chat
+interfaces remain outside the core system.
 
 ## Platform capabilities
 
@@ -22,6 +23,7 @@ system.
 - Prometheus instrumentation for the gateway and vLLM runtime
 - Containerized single-GPU vLLM deployment
 - Reproducibility manifests covering source, dataset, model, runtime, and environment identity
+- Performance-and-equivalence policies with CI-compatible pass/fail reports
 - GPU-free CI for API, adapter, benchmark, and artifact-integrity paths
 
 ## Architecture
@@ -37,6 +39,9 @@ flowchart LR
     Gateway --> Metrics[Prometheus metrics]
     vLLM --> Metrics
     Benchmark --> Results[JSONL + summary + plots]
+    Results --> Gate[Performance + equivalence gate]
+    Policy[Evaluation policy] --> Gate
+    Gate --> Decision[Eligibility report]
 ```
 
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for component and design details.
@@ -50,6 +55,7 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for component and design deta
 | Baseline runtime | Hugging Face Transformers + PyTorch | Transparent reference implementation |
 | Optimized runtime | vLLM OpenAI-compatible server | Production-oriented continuous serving runtime |
 | Load generation | asyncio + HTTPX | Controlled concurrency without another service |
+| Qualification | Versioned policy gate | Fail-closed performance and deterministic equivalence checks |
 | Metrics | Prometheus client + Prometheus | Histograms, counters, in-flight load, token counts |
 | Artifacts | JSONL and JSON | Easy to inspect, version, and analyze |
 | Packaging | `pyproject.toml`, Docker Compose | Reproducible local and GPU setup |
@@ -68,10 +74,13 @@ src/inference_lab/
   benchmark/
     runner.py                  Concurrent benchmark CLI
     dataset_tokens.py          Tokenizer-aware workload validation
+    evaluation.py              Deterministic output-equivalence analysis
+    gate.py                    Performance policy and eligibility reporting
     stats.py                   Percentiles and throughput summaries
 scripts/plot_results.py        Result plotting
 data/                          Versioned benchmark workloads and token reports
 benchmarks/                    Audited result sets and integrity checksums
+policies/                      Versioned evaluation requirements
 docs/                          Architecture and experiment plan
 tests/                         API and statistics tests
 ```
@@ -279,6 +288,66 @@ If an upstream backend omits exact token usage, token counts and output-token th
 `null`; the lab does not estimate them from whitespace. An HTTP 200 stream is counted as successful
 only after a terminal `done` event.
 
+## Gate a backend on performance and equivalence
+
+Inference Lab can require an optimized backend to satisfy both performance SLOs and deterministic
+output-equivalence constraints before it is marked eligible under a benchmark policy. This is an
+opt-in workflow: ordinary performance runs retain no generated output.
+
+Collect the reference and candidate with identical model, revision, dataset, and generation
+controls. Use `hash` evidence for exact comparison without retaining plaintext:
+
+```bash
+inference-lab-bench \
+  --url http://localhost:8000 \
+  --dataset data/short_chat.jsonl \
+  --concurrency 1,8 \
+  --requests 120 \
+  --repetitions 3 \
+  --warmup-requests 10 \
+  --max-new-tokens 64 \
+  --temperature 0 \
+  --top-p 1 \
+  --seed 42 \
+  --output-evidence hash \
+  --output results/reference.jsonl
+```
+
+Run the same command against the candidate backend with
+`--output results/candidate.jsonl`, then evaluate the pair:
+
+```bash
+inference-lab-evaluate \
+  --reference results/reference.jsonl \
+  --reference-summary results/reference.summary.json \
+  --candidate results/candidate.jsonl \
+  --candidate-summary results/candidate.summary.json \
+  --policy policies/deterministic-serving.example.json \
+  --output results/candidate.evaluation.json
+```
+
+The evaluator returns nonzero when any required control, artifact-identity check, performance
+threshold, reference-stability check, exact-match threshold, or candidate-stability threshold
+fails. Add `--report-only` when collecting a failing report is expected and the command should
+still exit successfully.
+
+The example policy contains illustrative requirements, not observed results; replace its values
+with workload-specific SLOs before using it as a release gate. `target_concurrency` selects the
+aggregate candidate rows to evaluate. Missing metrics fail closed rather than being ignored.
+
+Evidence modes:
+
+- `none` (default) retains output length only and cannot support equivalence evaluation.
+- `hash` retains a SHA-256 output digest and supports exact-match and stability checks.
+- `text` retains plaintext plus its digest and additionally supports
+  `min_matching_prefix_character_ratio` and first-divergence diagnostics.
+
+Hash evidence avoids storing plaintext but is not anonymization. Treat prompts, hashes, raw output,
+and reports according to the dataset's data-handling requirements. The deterministic gate requires
+temperature zero; sampled-output distribution testing remains a separate roadmap item. The
+published A100 comparison predates output evidence and supports performance claims only—it cannot
+be retroactively used for an equivalence claim.
+
 ## Plot one or more summaries
 
 ```bash
@@ -349,7 +418,8 @@ evaluation roadmap.
 3. Add speculative decoding and record draft-token acceptance rates.
 4. Profile with PyTorch Profiler or Nsight and implement one Triton kernel.
 5. Compare single-GPU and tensor-parallel multi-GPU serving.
-6. Add a small reasoning/coding quality suite so performance is never reported without correctness.
+6. Extend the deterministic equivalence gate with task-specific correctness and sampled-output
+   distribution evaluators.
 
 ## Deployment scope
 

@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "name": "example-deterministic-serving-policy",
+  "performance": {
+    "target_concurrency": [8],
+    "max_failure_rate": 0.01,
+    "max_ttft_ms_p95": 250,
+    "max_latency_ms_p95": 2000,
+    "min_request_throughput_rps": 5,
+    "min_output_throughput_tokens_per_s": 100
+  },
+  "equivalence": {
+    "min_exact_match_rate": 1.0,
+    "min_concurrency_stability_rate": 1.0,
+    "mismatch_limit": 20
+  }
+}
