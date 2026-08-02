@@ -86,6 +86,22 @@ async def test_run_one_hashes_output_without_retaining_text() -> None:
 
 
 @pytest.mark.asyncio
+async def test_run_one_rejects_unknown_output_evidence_mode() -> None:
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(ValueError, match="Unsupported output evidence mode"):
+            await runner.run_one(
+                client,
+                "http://test",
+                "prompt",
+                4,
+                0.0,
+                1.0,
+                42,
+                output_evidence="unsafe",
+            )
+
+
+@pytest.mark.asyncio
 async def test_async_main_writes_reproducible_artifacts(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -113,6 +113,19 @@ def evaluate_equivalence(
 
     reference_text = _stable_reference_text(reference_by_prompt, stable_reference_digests)
     candidate_attempted = len(candidate_rows)
+    candidate_evidence_rows = sum(
+        row.get("status") == "ok" and _output_digest(row) is not None
+        for row in candidate_rows
+    )
+    candidate_evidence_coverage_rate = (
+        candidate_evidence_rows / candidate_attempted if candidate_attempted else 0.0
+    )
+    stable_reference_coverage = sum(
+        prompt_sha256 in stable_reference_digests for prompt_sha256 in candidate_by_prompt
+    )
+    reference_prompt_coverage_rate = (
+        stable_reference_coverage / len(candidate_by_prompt) if candidate_by_prompt else 0.0
+    )
     exact_matches = 0
     comparable = 0
     prefix_ratios: list[float] = []
@@ -192,6 +205,15 @@ def evaluate_equivalence(
             "reference_stability_rate", reference_stability_rate, ">=", 1.0
         ),
         _threshold_check(
+            "reference_prompt_coverage_rate", reference_prompt_coverage_rate, ">=", 1.0
+        ),
+        _threshold_check(
+            "candidate_evidence_coverage_rate",
+            candidate_evidence_coverage_rate,
+            ">=",
+            1.0,
+        ),
+        _threshold_check(
             "exact_match_rate", exact_match_rate, ">=", min_exact_match_rate
         ),
         _threshold_check(
@@ -220,6 +242,9 @@ def evaluate_equivalence(
         "candidate_stable_prompt_count": stable_candidate_prompts,
         "concurrency_stability_rate": concurrency_stability_rate,
         "attempted_requests": candidate_attempted,
+        "candidate_evidence_rows": candidate_evidence_rows,
+        "candidate_evidence_coverage_rate": candidate_evidence_coverage_rate,
+        "reference_prompt_coverage_rate": reference_prompt_coverage_rate,
         "comparable_requests": comparable,
         "exact_matches": exact_matches,
         "exact_match_rate": exact_match_rate,

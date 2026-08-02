@@ -133,6 +133,41 @@ def test_reference_errors_invalidate_reference_stability() -> None:
     assert result["comparable_requests"] == 0
 
 
+def test_missing_candidate_evidence_fails_closed_even_with_zero_thresholds() -> None:
+    reference = [row("prompt", "reference", concurrency=1)]
+    candidate = [
+        {
+            "status": "ok",
+            "prompt_sha256": digest("prompt"),
+            "concurrency": 1,
+        }
+    ]
+
+    result = evaluate_equivalence(
+        reference,
+        candidate,
+        min_exact_match_rate=0.0,
+        min_concurrency_stability_rate=0.0,
+    )
+
+    assert result["passed"] is False
+    assert result["candidate_evidence_coverage_rate"] == 0.0
+
+
+def test_candidate_prompts_require_stable_reference_coverage() -> None:
+    reference = [row("known", "reference", concurrency=1)]
+    candidate = [row("unknown", "candidate", concurrency=1)]
+
+    result = evaluate_equivalence(
+        reference,
+        candidate,
+        min_exact_match_rate=0.0,
+    )
+
+    assert result["passed"] is False
+    assert result["reference_prompt_coverage_rate"] == 0.0
+
+
 def test_output_hash_must_match_captured_text() -> None:
     reference = [row("prompt", "reference", concurrency=1)]
     candidate = [row("prompt", "candidate", concurrency=1, evidence="text")]

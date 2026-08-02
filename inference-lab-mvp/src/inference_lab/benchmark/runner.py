@@ -113,6 +113,9 @@ async def run_one(
     seed: int | None,
     output_evidence: str = "none",
 ) -> dict[str, Any]:
+    if output_evidence not in OUTPUT_EVIDENCE_MODES:
+        raise ValueError(f"Unsupported output evidence mode: {output_evidence}")
+
     payload: dict[str, object] = {
         "prompt": prompt,
         "max_new_tokens": max_new_tokens,
